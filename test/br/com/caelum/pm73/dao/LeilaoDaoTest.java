@@ -10,6 +10,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import br.com.caelum.pm73.builder.LeilaoBuilder;
 import br.com.caelum.pm73.dominio.Leilao;
 import br.com.caelum.pm73.dominio.Usuario;
 
@@ -18,12 +19,14 @@ public class LeilaoDaoTest {
 	private Session session;
 	private UsuarioDao usuarioDao;
 	private LeilaoDao leilaoDao;
+	private Leilao leilao;
 
 	@Before
 	public void antes() {
 		session = new CriadorDeSessao().getSession();
 		usuarioDao = new UsuarioDao(session);
 		leilaoDao = new LeilaoDao(session);
+		leilao = new LeilaoBuilder().constroi();
 		session.beginTransaction();
 	}
 	
@@ -177,16 +180,13 @@ public class LeilaoDaoTest {
 		Calendar fim = Calendar.getInstance();
 		inicio.add(Calendar.DAY_OF_MONTH, -10);
 		
-		Usuario judith = new Usuario("Judith", "judith@email.com");
-		
-		Leilao leilao1 = new Leilao("RTX 3080", 5000.00, judith, false);
 		Calendar dataLeilao1 = Calendar.getInstance();
 		dataLeilao1.add(Calendar.DAY_OF_MONTH, -2);
-		leilao1.setDataAbertura(dataLeilao1);
-		leilao1.encerra();
+		leilao.setDataAbertura(dataLeilao1);
+		leilao.encerra();
 		
-		usuarioDao.salvar(judith);
-		leilaoDao.salvar(leilao1);
+		usuarioDao.salvar(leilao.getDono());
+		leilaoDao.salvar(leilao);
 		
 		List<Leilao> leiloes = leilaoDao.porPeriodo(inicio, fim);
 		

@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import br.com.caelum.pm73.builder.LeilaoBuilder;
+import br.com.caelum.pm73.dominio.Lance;
 import br.com.caelum.pm73.dominio.Leilao;
 import br.com.caelum.pm73.dominio.Usuario;
 
@@ -192,4 +193,127 @@ public class LeilaoDaoTest {
 		
 		assertEquals(0, leiloes.size());
 	}
+		
+	@Test 
+	public void deveRetornarLeiloesDisputadosNoPeriodo() {
+        Usuario dono = new Usuario("Jose da Silva", "jose@dasilva.com.br");
+        Usuario comprador1 = new Usuario("Joao", "joao@joao.com.br");
+        Usuario comprador2 = new Usuario("Maria", "maria@maria.com.br");
+
+        Leilao leilao1 = new LeilaoBuilder()
+        		.comNome("Geladeira")
+        		.comValor(1500.0)
+        		.comDono(dono)
+        		.diasAtras(2)
+                .comLance(new Lance(Calendar.getInstance(),comprador1,2000.0))
+                .encerrado()
+                .constroi();
+
+        Leilao leilao2 = new LeilaoBuilder()
+        		.comNome("Nintendo Wii")
+        		.comValor(2500.0)
+        		.comDono(dono)
+        		.diasAtras(6)
+                .comLance(new Lance(Calendar.getInstance(),comprador1,3000.0))
+                .comLance(new Lance(Calendar.getInstance(),comprador2,3500.0))
+                .comLance(new Lance(Calendar.getInstance(),comprador1,4000.0))
+                .constroi();
+
+        Leilao leilao3 = new LeilaoBuilder()
+        		.comNome("Xbox")
+        		.comValor(3000.0)
+        		.comDono(dono)
+        		.diasAtras(12)
+                .comLance(new Lance(Calendar.getInstance(),comprador1,4000.0))
+                .usado()
+                .constroi();
+
+        usuarioDao.salvar(dono);
+        usuarioDao.salvar(comprador1);
+        usuarioDao.salvar(comprador2);
+        leilaoDao.salvar(leilao1);
+        leilaoDao.salvar(leilao2);
+        leilaoDao.salvar(leilao3);
+
+        List<Leilao> leiloes = leilaoDao.disputadosEntre(1000.0, 3000.0);
+
+        assertEquals(1, leiloes.size());
+        assertEquals("Nintendo Wii", leiloes.get(0).getNome());
+    }
+	
+	@Test
+	public void deveRetornarLeiloesDeUsuario() {
+        Usuario dono = new Usuario("Jose da Silva", "jose@dasilva.com.br");
+        Usuario comprador1 = new Usuario("Joao", "joao@joao.com.br");
+
+        Leilao leilao1 = new LeilaoBuilder()
+        		.comNome("Geladeira")
+        		.comValor(1500.0)
+        		.comDono(dono)
+        		.diasAtras(2)
+                .comLance(new Lance(Calendar.getInstance(),comprador1,2000.0))
+                .encerrado()
+                .constroi();
+        
+        usuarioDao.salvar(dono);
+        usuarioDao.salvar(comprador1);
+        leilaoDao.salvar(leilao1);
+
+        List<Leilao> leiloes = leilaoDao.listaLeiloesDoUsuario(comprador1);
+
+        assertEquals(1, leiloes.size());
+        assertEquals("Geladeira", leiloes.get(0).getNome());
+	}
+	
+    @Test
+    public void listaDeLeiloesDeUmUsuarioNaoTemRepeticao() throws Exception {
+        Usuario dono = new Usuario("Mauricio", "m@a.com");
+        Usuario comprador = new Usuario("Victor", "v@v.com");
+        
+        Leilao leilao = new LeilaoBuilder()
+            .comDono(dono)
+            .comLance(new Lance(Calendar.getInstance(), comprador, 100.0))
+            .comLance(new Lance(Calendar.getInstance(), comprador, 200.0))
+            .constroi();
+        
+        usuarioDao.salvar(dono);
+        usuarioDao.salvar(comprador);
+        leilaoDao.salvar(leilao);
+
+        List<Leilao> leiloes = leilaoDao.listaLeiloesDoUsuario(comprador);
+        assertEquals(1, leiloes.size());
+        assertEquals(leilao, leiloes.get(0));
+    }
+    
+    @Test
+    public void deveRetornarValorMedioDeLanceDoUsuario() {
+    	Usuario dono = new Usuario("Mauricio", "m@a.com");
+        Usuario comprador = new Usuario("Victor", "v@v.com");
+        
+        Leilao leilao1 = new LeilaoBuilder()
+        	.comNome("RTX 2080")
+        	.comValor(3000.00)
+            .comDono(dono)
+            .comLance(new Lance(Calendar.getInstance(), comprador, 100.0))
+            .comLance(new Lance(Calendar.getInstance(), comprador, 200.0))
+            .diasAtras(2)
+            .constroi();
+        
+        Leilao leilao2 = new LeilaoBuilder()
+        	.comNome("RTX 2080")
+        	.comValor(2000.00)
+            .comDono(dono)
+            .comLance(new Lance(Calendar.getInstance(), comprador, 100.0))
+            .diasAtras(2)
+            .constroi();
+        
+        usuarioDao.salvar(dono);
+        usuarioDao.salvar(comprador);
+        leilaoDao.salvar(leilao1);
+        leilaoDao.salvar(leilao2);
+
+        double valor = leilaoDao.getValorInicialMedioDoUsuario(comprador);
+        
+        assertEquals(2500.00, valor, 0.00001);
+    }
 }
